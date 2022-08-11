@@ -28,13 +28,12 @@ public:
     void Print(std::ostream& out) const;
     void PrintFormula(std::ostream& out) const;
 
-//    std::forward_list<Position>& GetCells();
-//    const std::forward_list<Position>& GetCells() const;
-
 private:
     std::unique_ptr<ASTImpl::Expr> root_expr_;
 
-//    std::forward_list<Position> cells_;
+    // При парсинге формулы в методе ParseFormulaAST мы сохраним 
+    // все встреченные индексы ячеек в отдельный список
+    std::forward_list<Position> cells_;
 };
 
 FormulaAST ParseFormulaAST(std::istream& in);
