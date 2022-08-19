@@ -5,6 +5,8 @@
 
 //#include <set>    // для dependent_cells_
 #include <optional>
+#include <functional>     // из прекода к заданию
+#include <unordered_set>  // из прекода к заданию
 
 // Тип ячейки
 enum class CellType
@@ -20,12 +22,19 @@ public:
     Cell(SheetInterface& sheet);    // Конструктор теперь принимает ссылку на лист таблицы
     ~Cell();
 
-    void Set(std::string text);
+    void Set(const std::string& text);
     void Clear();
 
     CellInterface::Value GetValue() const override;
     std::string GetText() const override;
     std::vector<Position> GetReferencedCells() const override;
+
+    // Метод проверяет циклическую зависимость start_cell_ptr от end_pos
+    bool IsCyclicDependent(const Cell* start_cell_ptr, const Position& end_pos) const;
+    // Метод сбрасывает содержимое кэша ячейки
+    void InvalidateCache();
+    // Метод проверяет кэшированы ли данные в ячейке
+    bool IsCacheValid() const;
 
 private:
     class Impl;    // Forward declaration
@@ -94,8 +103,8 @@ private:
         void IInvalidateCache() override;
         bool ICached() const override;
     private:
+        SheetInterface& sheet_;    // Ссылка на лист таблицы (пробрасывается через конструктор Cell) для работы формул
         std::unique_ptr<FormulaInterface> formula_;
         std::optional<CellInterface::Value> cached_value_;
-        SheetInterface& sheet_;         // Ссылка на лист таблицы (пробрасывается через конструктор Cell) для работы формул
     };
 };
