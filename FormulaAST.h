@@ -28,7 +28,7 @@ public:
     FormulaAST& operator=(FormulaAST&&) = default;
     ~FormulaAST();
 
-    // См. определение FormulaAST::Execute() для подробной информации
+    // РЎРј. РѕРїСЂРµРґРµР»РµРЅРёРµ FormulaAST::Execute() РґР»СЏ РїРѕРґСЂРѕР±РЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё
     double Execute(const std::function<double(Position)>& func) const;  //MODIFIED
     void PrintCells(std::ostream& out) const;  //NEW
     void Print(std::ostream& out) const;
