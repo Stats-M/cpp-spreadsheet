@@ -14,8 +14,8 @@ else()
   )
 endif()
 
-# CMAKE_CURRENT_SOURCE_DIR - папка основного проекта.
-# Локально это "D:\dev\s16-7"
+# CMAKE_CURRENT_SOURCE_DIR - РїР°РїРєР° РѕСЃРЅРѕРІРЅРѕРіРѕ РїСЂРѕРµРєС‚Р°.
+# Р›РѕРєР°Р»СЊРЅРѕ СЌС‚Рѕ "DRIVE_LETTER:\dev\s16-7"
 set(ANTLR_EXECUTABLE ${CMAKE_CURRENT_SOURCE_DIR}/antlr-4.10.1-complete.jar)
 include(${CMAKE_CURRENT_SOURCE_DIR}/FindANTLR.cmake)
 
