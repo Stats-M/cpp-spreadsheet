@@ -15,41 +15,41 @@ Sheet::~Sheet()
 
 void Sheet::SetCell(Position pos, std::string text)
 {
-    // Невалидные позиции не обрабатываем
+    // РќРµРІР°Р»РёРґРЅС‹Рµ РїРѕР·РёС†РёРё РЅРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј
     if (!pos.IsValid())
     {
         throw InvalidPositionException("Invalid position for SetCell()");
     }
 
-    // Выделяем память под ячейку, если нужно
+    // Р’С‹РґРµР»СЏРµРј РїР°РјСЏС‚СЊ РїРѕРґ СЏС‡РµР№РєСѓ, РµСЃР»Рё РЅСѓР¶РЅРѕ
     Touch(pos);
-    // Получаем указатель на ячейку для текущего листа
+    // РџРѕР»СѓС‡Р°РµРј СѓРєР°Р·Р°С‚РµР»СЊ РЅР° СЏС‡РµР№РєСѓ РґР»СЏ С‚РµРєСѓС‰РµРіРѕ Р»РёСЃС‚Р°
     auto cell = GetCell(pos);
 
     if (cell)
     {
-        // Ячейка уже существует.
-        // Сохраним старое содержимое на случай ввода некорректной формулы.
-        // По заданию мы должны откатить изменения в этом случае.
+        // РЇС‡РµР№РєР° СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚.
+        // РЎРѕС…СЂР°РЅРёРј СЃС‚Р°СЂРѕРµ СЃРѕРґРµСЂР¶РёРјРѕРµ РЅР° СЃР»СѓС‡Р°Р№ РІРІРѕРґР° РЅРµРєРѕСЂСЂРµРєС‚РЅРѕР№ С„РѕСЂРјСѓР»С‹.
+        // РџРѕ Р·Р°РґР°РЅРёСЋ РјС‹ РґРѕР»Р¶РЅС‹ РѕС‚РєР°С‚РёС‚СЊ РёР·РјРµРЅРµРЅРёСЏ РІ СЌС‚РѕРј СЃР»СѓС‡Р°Рµ.
         std::string old_text = cell->GetText();
 
-        // Инвалидируем кэш ячейки и зависимых от нее... 
+        // РРЅРІР°Р»РёРґРёСЂСѓРµРј РєСЌС€ СЏС‡РµР№РєРё Рё Р·Р°РІРёСЃРёРјС‹С… РѕС‚ РЅРµРµ... 
         InvalidateCell(pos);
-        // ... и удаляем зависимости
+        // ... Рё СѓРґР°Р»СЏРµРј Р·Р°РІРёСЃРёРјРѕСЃС‚Рё
         DeleteDependencies(pos);
-        // Очищаем старое содержимое ячейки (не сам unique_ptr, а содержание ячейки по указанному адресу)
+        // РћС‡РёС‰Р°РµРј СЃС‚Р°СЂРѕРµ СЃРѕРґРµСЂР¶РёРјРѕРµ СЏС‡РµР№РєРё (РЅРµ СЃР°Рј unique_ptr, Р° СЃРѕРґРµСЂР¶Р°РЅРёРµ СЏС‡РµР№РєРё РїРѕ СѓРєР°Р·Р°РЅРЅРѕРјСѓ Р°РґСЂРµСЃСѓ)
         dynamic_cast<Cell*>(cell)->Clear();
 
         dynamic_cast<Cell*>(cell)->Set(text);
-        // Проверяем на циклические зависимости новое содержимое cell
+        // РџСЂРѕРІРµСЂСЏРµРј РЅР° С†РёРєР»РёС‡РµСЃРєРёРµ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РЅРѕРІРѕРµ СЃРѕРґРµСЂР¶РёРјРѕРµ cell
         if (dynamic_cast<Cell*>(cell)->IsCyclicDependent(dynamic_cast<Cell*>(cell), pos))
         {
-            // Есть циклическая зависимость. Откат изменений
+            // Р•СЃС‚СЊ С†РёРєР»РёС‡РµСЃРєР°СЏ Р·Р°РІРёСЃРёРјРѕСЃС‚СЊ. РћС‚РєР°С‚ РёР·РјРµРЅРµРЅРёР№
             dynamic_cast<Cell*>(cell)->Set(std::move(old_text));
             throw CircularDependencyException("Circular dependency detected!");
         }
 
-        // Сохраняем зависимости
+        // РЎРѕС…СЂР°РЅСЏРµРј Р·Р°РІРёСЃРёРјРѕСЃС‚Рё
         for (const auto& ref_cell : dynamic_cast<Cell*>(cell)->GetReferencedCells())
         {
             AddDependentCell(ref_cell, pos);
@@ -57,28 +57,28 @@ void Sheet::SetCell(Position pos, std::string text)
     }
     else
     {
-        // Новая ячейка (nullptr). Нужна проверка изменений Printable Area в конце
+        // РќРѕРІР°СЏ СЏС‡РµР№РєР° (nullptr). РќСѓР¶РЅР° РїСЂРѕРІРµСЂРєР° РёР·РјРµРЅРµРЅРёР№ Printable Area РІ РєРѕРЅС†Рµ
         auto new_cell = std::make_unique<Cell>(*this);
         new_cell->Set(text);
 
-        // Проверяем циклические ссылки
+        // РџСЂРѕРІРµСЂСЏРµРј С†РёРєР»РёС‡РµСЃРєРёРµ СЃСЃС‹Р»РєРё
         if (new_cell.get()->IsCyclicDependent(new_cell.get(), pos))
         {
             throw CircularDependencyException("Circular dependency detected!");
         }
 
-        // К настоящему моменту валидность формулы, позиции и отсутствие
-        // циклических зависимостей проверены.
-        // Переходим к модификации Sheet.
+        // Рљ РЅР°СЃС‚РѕСЏС‰РµРјСѓ РјРѕРјРµРЅС‚Сѓ РІР°Р»РёРґРЅРѕСЃС‚СЊ С„РѕСЂРјСѓР»С‹, РїРѕР·РёС†РёРё Рё РѕС‚СЃСѓС‚СЃС‚РІРёРµ
+        // С†РёРєР»РёС‡РµСЃРєРёС… Р·Р°РІРёСЃРёРјРѕСЃС‚РµР№ РїСЂРѕРІРµСЂРµРЅС‹.
+        // РџРµСЂРµС…РѕРґРёРј Рє РјРѕРґРёС„РёРєР°С†РёРё Sheet.
 
-        // Проходим по вектору ячеек из формулы и добавляем
-        // для каждой из них нашу ячейку как зависимую
+        // РџСЂРѕС…РѕРґРёРј РїРѕ РІРµРєС‚РѕСЂСѓ СЏС‡РµРµРє РёР· С„РѕСЂРјСѓР»С‹ Рё РґРѕР±Р°РІР»СЏРµРј
+        // РґР»СЏ РєР°Р¶РґРѕР№ РёР· РЅРёС… РЅР°С€Сѓ СЏС‡РµР№РєСѓ РєР°Рє Р·Р°РІРёСЃРёРјСѓСЋ
         for (const auto& ref_cell : new_cell.get()->GetReferencedCells())
         {
             AddDependentCell(ref_cell, pos);
         }
 
-        // Заменяем unique_ptr с nullptr из sheet_  на новый указатель
+        // Р—Р°РјРµРЅСЏРµРј unique_ptr СЃ nullptr РёР· sheet_  РЅР° РЅРѕРІС‹Р№ СѓРєР°Р·Р°С‚РµР»СЊ
         sheet_.at(pos.row).at(pos.col) = std::move(new_cell);
         UpdatePrintableSize();
     }
@@ -86,57 +86,57 @@ void Sheet::SetCell(Position pos, std::string text)
 
 const CellInterface* Sheet::GetCell(Position pos) const
 {
-    // Невалидные позиции не обрабатываем
+    // РќРµРІР°Р»РёРґРЅС‹Рµ РїРѕР·РёС†РёРё РЅРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј
     if (!pos.IsValid())
     {
         throw InvalidPositionException("Invalid position for GetCell()");
     }
 
-    // т.к. не const GetCell() ничего не меняет в объекте Sheet,
-    // вызываем ее с const-кастом текущего объекта
+    // С‚.Рє. РЅРµ const GetCell() РЅРёС‡РµРіРѕ РЅРµ РјРµРЅСЏРµС‚ РІ РѕР±СЉРµРєС‚Рµ Sheet,
+    // РІС‹Р·С‹РІР°РµРј РµРµ СЃ const-РєР°СЃС‚РѕРј С‚РµРєСѓС‰РµРіРѕ РѕР±СЉРµРєС‚Р°
     // return const_cast<Sheet*>(this)->GetCell(pos);
 
-    // Если память для ячейки выделена...
+    // Р•СЃР»Рё РїР°РјСЏС‚СЊ РґР»СЏ СЏС‡РµР№РєРё РІС‹РґРµР»РµРЅР°...
     if (CellExists(pos))
     {
-        //  ...и ее указатель не nullptr...
+        //  ...Рё РµРµ СѓРєР°Р·Р°С‚РµР»СЊ РЅРµ nullptr...
         if (sheet_.at(pos.row).at(pos.col))
         {
-            // ...возвращаем его
+            // ...РІРѕР·РІСЂР°С‰Р°РµРј РµРіРѕ
             return sheet_.at(pos.row).at(pos.col).get();
         }
     }
 
-    // Для любых несуществующих ячеек возвращаем просто nullptr
+    // Р”Р»СЏ Р»СЋР±С‹С… РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёС… СЏС‡РµРµРє РІРѕР·РІСЂР°С‰Р°РµРј РїСЂРѕСЃС‚Рѕ nullptr
     return nullptr;
 }
 
 CellInterface* Sheet::GetCell(Position pos)
 {
-    // Невалидные позиции не обрабатываем
+    // РќРµРІР°Р»РёРґРЅС‹Рµ РїРѕР·РёС†РёРё РЅРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј
     if (!pos.IsValid())
     {
         throw InvalidPositionException("Invalid position for GetCell()");
     }
 
-    // Если память для ячейки выделена...
+    // Р•СЃР»Рё РїР°РјСЏС‚СЊ РґР»СЏ СЏС‡РµР№РєРё РІС‹РґРµР»РµРЅР°...
     if (CellExists(pos))
     {
-        //  ...и ее указатель не nullptr...
+        //  ...Рё РµРµ СѓРєР°Р·Р°С‚РµР»СЊ РЅРµ nullptr...
         if (sheet_.at(pos.row).at(pos.col))
         {
-            // ...возвращаем его
+            // ...РІРѕР·РІСЂР°С‰Р°РµРј РµРіРѕ
             return sheet_.at(pos.row).at(pos.col).get();
         }
     }
 
-    // Для любых несуществующих ячеек возвращаем просто nullptr
+    // Р”Р»СЏ Р»СЋР±С‹С… РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰РёС… СЏС‡РµРµРє РІРѕР·РІСЂР°С‰Р°РµРј РїСЂРѕСЃС‚Рѕ nullptr
     return nullptr;
 }
 
 void Sheet::ClearCell(Position pos)
 {
-    // Невалидные позиции не обрабатываем
+    // РќРµРІР°Р»РёРґРЅС‹Рµ РїРѕР·РёС†РёРё РЅРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј
     if (!pos.IsValid())
     {
         throw InvalidPositionException("Invalid position for ClearCell()");
@@ -144,16 +144,16 @@ void Sheet::ClearCell(Position pos)
 
     if (CellExists(pos))
     {
-        //// Удаляем управляемый умным указателем ресурс, используя p.reset(p.get())
+        //// РЈРґР°Р»СЏРµРј СѓРїСЂР°РІР»СЏРµРјС‹Р№ СѓРјРЅС‹Рј СѓРєР°Р·Р°С‚РµР»РµРј СЂРµСЃСѓСЂСЃ, РёСЃРїРѕР»СЊР·СѓСЏ p.reset(p.get())
         //sheet_.at(pos.row).at(pos.col).reset(
         //    sheet_.at(pos.row).at(pos.col).get()
         //);
-        sheet_.at(pos.row).at(pos.col).reset();       // Удаляет содержимое ячейки
+        sheet_.at(pos.row).at(pos.col).reset();       // РЈРґР°Р»СЏРµС‚ СЃРѕРґРµСЂР¶РёРјРѕРµ СЏС‡РµР№РєРё
 
          // pos.row/col 0-based          max_row/col 1-based
         if ((pos.row + 1 == max_row_) || (pos.col + 1 == max_col_))
         {
-            // Удаленная ячейка была на границе Printable Area. Нужен перерасчет
+            // РЈРґР°Р»РµРЅРЅР°СЏ СЏС‡РµР№РєР° Р±С‹Р»Р° РЅР° РіСЂР°РЅРёС†Рµ Printable Area. РќСѓР¶РµРЅ РїРµСЂРµСЂР°СЃС‡РµС‚
             area_is_valid_ = false;
             UpdatePrintableSize();
         }
@@ -167,12 +167,12 @@ Size Sheet::GetPrintableSize() const
         return Size{ max_row_, max_col_ };
     }
     
-    // Сюда попадать не должны. Можно либо вернуть {0,0}, либо бросить исключение
+    // РЎСЋРґР° РїРѕРїР°РґР°С‚СЊ РЅРµ РґРѕР»Р¶РЅС‹. РњРѕР¶РЅРѕ Р»РёР±Рѕ РІРµСЂРЅСѓС‚СЊ {0,0}, Р»РёР±Рѕ Р±СЂРѕСЃРёС‚СЊ РёСЃРєР»СЋС‡РµРЅРёРµ
 
-    // Во всех прочих случаях возвращаем {0, 0}
+    // Р’Рѕ РІСЃРµС… РїСЂРѕС‡РёС… СЃР»СѓС‡Р°СЏС… РІРѕР·РІСЂР°С‰Р°РµРј {0, 0}
     //return { 0,0 };
 
-    // Бросаем исключение
+    // Р‘СЂРѕСЃР°РµРј РёСЃРєР»СЋС‡РµРЅРёРµ
     throw InvalidPositionException("The size of printable area has not been updated");
 }
 
@@ -181,20 +181,20 @@ void Sheet::PrintValues(std::ostream& output) const
     for (int x = 0; x < max_row_; ++x)
     {
         bool need_separator = false;
-        // Проходим по всей ширине Printable area
+        // РџСЂРѕС…РѕРґРёРј РїРѕ РІСЃРµР№ С€РёСЂРёРЅРµ Printable area
         for (int y = 0; y < max_col_; ++y)
         {
-            // Проверка необходимости печати разделителя
+            // РџСЂРѕРІРµСЂРєР° РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё РїРµС‡Р°С‚Рё СЂР°Р·РґРµР»РёС‚РµР»СЏ
             if (need_separator)
             {
                 output << '\t';
             }
             need_separator = true;
 
-            // Если мы не вышли за пределы вектора И ячейка не nullptr
+            // Р•СЃР»Рё РјС‹ РЅРµ РІС‹С€Р»Рё Р·Р° РїСЂРµРґРµР»С‹ РІРµРєС‚РѕСЂР° Р СЏС‡РµР№РєР° РЅРµ nullptr
             if ((y < static_cast<int>(sheet_.at(x).size())) && sheet_.at(x).at(y))
             {
-                // Ячейка существует
+                // РЇС‡РµР№РєР° СЃСѓС‰РµСЃС‚РІСѓРµС‚
                 auto value = sheet_.at(x).at(y)->GetValue();
                 if (std::holds_alternative<std::string>(value))
                 {
@@ -210,7 +210,7 @@ void Sheet::PrintValues(std::ostream& output) const
                 }
             }
         }
-        // Разделение строк
+        // Р Р°Р·РґРµР»РµРЅРёРµ СЃС‚СЂРѕРє
         output << '\n';
     }
 }
@@ -220,35 +220,35 @@ void Sheet::PrintTexts(std::ostream& output) const
     for (int x = 0; x < max_row_; ++x)
     {
         bool need_separator = false;
-        // Проходим по всей ширине Printable area
+        // РџСЂРѕС…РѕРґРёРј РїРѕ РІСЃРµР№ С€РёСЂРёРЅРµ Printable area
         for (int y = 0; y < max_col_; ++y)
         {
-            // Проверка необходимости печати разделителя
+            // РџСЂРѕРІРµСЂРєР° РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё РїРµС‡Р°С‚Рё СЂР°Р·РґРµР»РёС‚РµР»СЏ
             if (need_separator)
             {
                 output << '\t';
             }
             need_separator = true;
 
-            // Если мы не вышли за пределы вектора И ячейка не nullptr
+            // Р•СЃР»Рё РјС‹ РЅРµ РІС‹С€Р»Рё Р·Р° РїСЂРµРґРµР»С‹ РІРµРєС‚РѕСЂР° Р СЏС‡РµР№РєР° РЅРµ nullptr
             if ((y < static_cast<int>(sheet_.at(x).size())) && sheet_.at(x).at(y))
             {
-                // Ячейка существует
+                // РЇС‡РµР№РєР° СЃСѓС‰РµСЃС‚РІСѓРµС‚
                 output << sheet_.at(x).at(y)->GetText();
             }
         }
-        // Разделение строк
+        // Р Р°Р·РґРµР»РµРЅРёРµ СЃС‚СЂРѕРє
         output << '\n';
     }
 }
 
 void Sheet::InvalidateCell(const Position& pos)
 {
-    // Для всех зависимых ячеек рекурсивно инвалидируем кэш
+    // Р”Р»СЏ РІСЃРµС… Р·Р°РІРёСЃРёРјС‹С… СЏС‡РµРµРє СЂРµРєСѓСЂСЃРёРІРЅРѕ РёРЅРІР°Р»РёРґРёСЂСѓРµРј РєСЌС€
     for (const auto& dependent_cell : GetDependentCells(pos))
     {
         auto cell = GetCell(dependent_cell);
-        // InvalidateCache() есть только у Cell, приводим указатель
+        // InvalidateCache() РµСЃС‚СЊ С‚РѕР»СЊРєРѕ Сѓ Cell, РїСЂРёРІРѕРґРёРј СѓРєР°Р·Р°С‚РµР»СЊ
         dynamic_cast<Cell*>(cell)->InvalidateCache();
         InvalidateCell(dependent_cell);
     }
@@ -256,7 +256,7 @@ void Sheet::InvalidateCell(const Position& pos)
 
 void Sheet::AddDependentCell(const Position& main_cell, const Position& dependent_cell)
 {
-    // При отсутствии записи для main_cell создаем ее через []
+    // РџСЂРё РѕС‚СЃСѓС‚СЃС‚РІРёРё Р·Р°РїРёСЃРё РґР»СЏ main_cell СЃРѕР·РґР°РµРј РµРµ С‡РµСЂРµР· []
     cells_dependencies_[main_cell].insert(dependent_cell);
 }
 
@@ -264,11 +264,11 @@ const std::set<Position> Sheet::GetDependentCells(const Position& pos)
 {
     if (cells_dependencies_.count(pos) != 0)
     {
-        // Есть такой ключ в словаре зависимостей. Возвращаем значение
+        // Р•СЃС‚СЊ С‚Р°РєРѕР№ РєР»СЋС‡ РІ СЃР»РѕРІР°СЂРµ Р·Р°РІРёСЃРёРјРѕСЃС‚РµР№. Р’РѕР·РІСЂР°С‰Р°РµРј Р·РЅР°С‡РµРЅРёРµ
         return cells_dependencies_.at(pos);
     }
 
-    // Если мы здесь, от ячейки pos никто не зависит
+    // Р•СЃР»Рё РјС‹ Р·РґРµСЃСЊ, РѕС‚ СЏС‡РµР№РєРё pos РЅРёРєС‚Рѕ РЅРµ Р·Р°РІРёСЃРёС‚
     return {};
 }
 
@@ -282,7 +282,7 @@ void Sheet::UpdatePrintableSize()
     max_row_ = 0;
     max_col_ = 0;
 
-    // Сканируем ячейки, пропуская nullptr
+    // РЎРєР°РЅРёСЂСѓРµРј СЏС‡РµР№РєРё, РїСЂРѕРїСѓСЃРєР°СЏ nullptr
     for (int x = 0; x < static_cast<int>(sheet_.size()); ++x)
     {
         for (int y = 0; y < static_cast<int>(sheet_.at(x).size()); ++y)
@@ -297,7 +297,7 @@ void Sheet::UpdatePrintableSize()
         }
     }
 
-    // Перерасчет произведен
+    // РџРµСЂРµСЂР°СЃС‡РµС‚ РїСЂРѕРёР·РІРµРґРµРЅ
     area_is_valid_ = true;
 }
 
@@ -308,7 +308,7 @@ bool Sheet::CellExists(Position pos) const
 
 void Sheet::Touch(Position pos)
 {
-    // Невалидные позиции не обрабатываем
+    // РќРµРІР°Р»РёРґРЅС‹Рµ РїРѕР·РёС†РёРё РЅРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј
     if (!pos.IsValid())
     {
         return;
@@ -316,18 +316,18 @@ void Sheet::Touch(Position pos)
 
     // size() 1-based          pos.row/col 0-based          sheet_[] 0-based
 
-    // Если элементов в векторе строк меньше, чем номер строки в pos.row...
+    // Р•СЃР»Рё СЌР»РµРјРµРЅС‚РѕРІ РІ РІРµРєС‚РѕСЂРµ СЃС‚СЂРѕРє РјРµРЅСЊС€Рµ, С‡РµРј РЅРѕРјРµСЂ СЃС‚СЂРѕРєРё РІ pos.row...
     if (static_cast<int>(sheet_.size()) < (pos.row + 1))
     {
-        // ... резервируем и инициализируем nullptr элементы вплоть до строки pos.row
+        // ... СЂРµР·РµСЂРІРёСЂСѓРµРј Рё РёРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј nullptr СЌР»РµРјРµРЅС‚С‹ РІРїР»РѕС‚СЊ РґРѕ СЃС‚СЂРѕРєРё pos.row
         sheet_.reserve(pos.row + 1);
         sheet_.resize(pos.row + 1);
     }
 
-    // Если элементов в векторе столбцов меньше, чем номер столбца в pos.col...
+    // Р•СЃР»Рё СЌР»РµРјРµРЅС‚РѕРІ РІ РІРµРєС‚РѕСЂРµ СЃС‚РѕР»Р±С†РѕРІ РјРµРЅСЊС€Рµ, С‡РµРј РЅРѕРјРµСЂ СЃС‚РѕР»Р±С†Р° РІ pos.col...
     if (static_cast<int>(sheet_.at(pos.row).size()) < (pos.col + 1))
     {
-        // ... резервируем и инициализируем nullptr элементы вплоть до столбца pos.col
+        // ... СЂРµР·РµСЂРІРёСЂСѓРµРј Рё РёРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј nullptr СЌР»РµРјРµРЅС‚С‹ РІРїР»РѕС‚СЊ РґРѕ СЃС‚РѕР»Р±С†Р° pos.col
         sheet_.at(pos.row).reserve(pos.col + 1);
         sheet_.at(pos.row).resize(pos.col + 1);
     }
@@ -335,7 +335,7 @@ void Sheet::Touch(Position pos)
 
 
 
-// Создаёт готовую к работе пустую таблицу. Объявление в common.h
+// РЎРѕР·РґР°С‘С‚ РіРѕС‚РѕРІСѓСЋ Рє СЂР°Р±РѕС‚Рµ РїСѓСЃС‚СѓСЋ С‚Р°Р±Р»РёС†Сѓ. РћР±СЉСЏРІР»РµРЅРёРµ РІ common.h
 std::unique_ptr<SheetInterface> CreateSheet()
 {
     return std::make_unique<Sheet>();
