@@ -275,25 +275,39 @@ CellType Cell::FormulaImpl::IGetType() const
 
 CellInterface::Value Cell::FormulaImpl::IGetValue() const
 {
-    FormulaInterface::Value result = formula_->Evaluate(sheet_);
-    if (std::holds_alternative<double>(result))
+
+    // Все расчеты производим только если кэш невалиден
+    if (!cached_value_)
     {
-        // Вычисление произведено успешно
-        if (std::isfinite(std::get<double>(result)))
+        // Проверять, что в ячейках, на которые ссылается наша
+        // нет текста, не будем: Formula::Evaluate() сама умеет это делать
+        // и возвращает FormulaError вместо double в случае ошибок.
+
+        FormulaInterface::Value result = formula_->Evaluate(sheet_);
+        if (std::holds_alternative<double>(result))
         {
-            // т.к. result имеет тип variant, нужно вернуть из него значение типа double
-            return std::get<double>(result);
+            // Вычисление произведено успешно
+            if (std::isfinite(std::get<double>(result)))
+            {
+                // т.к. result имеет тип variant (FormulaInterface::Value), 
+                // нужно извлечь из него значение типа double, на основе
+                // которого будем возвращать variant CellInterface::Value
+                return std::get<double>(result);
+            }
+            else
+            {
+                // Ошибка вычисления формулы (на этом этапе только 1 вариант бесконечности == деление на ноль)
+                //return FormulaError("#DIV/0!");
+                return FormulaError(FormulaError::Category::Div0);
+            }
         }
-        else
-        {
-            // Ошибка вычисления формулы (на этом этапе только 1 вариант бесконечности == деление на ноль)
-            //return FormulaError("#DIV/0!");
-            return FormulaError(FormulaError::Category::Div0);
-        }
+
+        // Если мы здесь, вычисление закончилось ошибкой. Возвращаем ее
+        return std::get<FormulaError>(result);
     }
 
-    // Если мы здесь, вычисление закончилось ошибкой. Пробрасываем ее дальше
-    return std::get<FormulaError>(result);
+    // Если мы здесь, то кэш вычислен и валиден. Возвращаем его значение.
+    return *cached_value_;
 }
 
 std::string Cell::FormulaImpl::IGetText() const
